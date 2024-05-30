@@ -347,3 +347,173 @@ export default router;
    - 确保在关键操作（如 `logout`）中保护路由，以防止 CSRF 攻击。
 
 通过这些改进，可以增强代码的安全性和可维护性，减少潜在的安全隐患。
+
+## 3. User routes and controllers added
+
+在实现 `followUnfollowUser`, `getUserProfile`, `getSuggestedUsers` 这三个函数和路由的过程中，我们着重考虑了代码的模块化、可读性和可维护性。我们决定按功能和模块组织辅助函数和验证逻辑，以避免代码臃肿，并提高代码的复用性和清晰度。
+
+### 新增和改进的函数
+
+1. **`followUnfollowUser` 函数**
+
+   - 处理用户的关注和取消关注操作。
+   - 检查用户是否已经关注目标用户，并根据情况进行关注或取消关注的操作。
+   - 发送关注通知给目标用户。
+
+2. **`getUserProfile` 函数**
+
+   - 获取用户的个人资料信息。
+   - 返回用户的基本信息和社交数据（如关注者和关注的用户列表）。
+
+3. **`getSuggestedUsers` 函数**
+
+   - 获取推荐的用户列表，排除当前用户已经关注的用户。
+   - 使用 MongoDB 的聚合管道 `$match` 和 `$sample` 随机选择用户。
+
+   ```javascript
+   export const getSuggestedUsers = async (req, res) => {
+     try {
+       const userId = req.user._id;
+       const usersFollowedByMe = await getUserFollowing(userId);
+       const suggestedUsers = await getRandomUsers(
+         userId,
+         usersFollowedByMe,
+         4
+       );
+       res.status(200).json(suggestedUsers);
+     } catch (error) {
+       console.log("Error in getSuggestedUsers: ", error.message);
+       res.status(500).json({ error: error.message });
+     }
+   };
+   ```
+
+   4. **`updateUser` 函数**
+      - 处理用户信息的更新，包括用户名、电子邮件、密码、头像、封面、个人简介和链接等。
+      - 使用辅助函数 `handlePasswordUpdate` 处理密码更新逻辑，确保当前密码验证和新密码加密。
+      - 使用辅助函数 `handleImageUpdate` 处理头像和封面图片的更新，包括旧图片的删除和新图片的上传。
+
+### 改善的函数和模块
+
+1. **`getUserFollowing` 函数**
+
+   - 获取当前用户关注的用户 ID 列表。
+   - 将该逻辑封装在独立的辅助函数中，提高代码复用性。
+
+2. **`getRandomUsers` 函数**
+
+   - 从数据库中随机获取未被当前用户关注的用户列表。
+   - 使用 MongoDB 聚合管道实现高效的随机选择和数据过滤。
+
+     - [aggregation](https://www.mongodb.com/docs/manual/aggregation/)
+     - [$project](https://www.mongodb.com/docs/manual/reference/operator/aggregation/project/)
+
+     ```javascript
+     /**
+      * 获取随机推荐用户
+      *
+      * @param {ObjectId} currentUserId - 当前用户的 ID
+      * @param {Array<ObjectId>} excludeUserIds - 需要排除的用户 ID 列表
+      * @param {Number} sampleSize - 随机获取的用户数量
+      * @returns {Promise<Array<Object>>} - 随机推荐的用户列表
+      *
+      * @throws {Error} - 如果查询过程中发生错误，抛出错误
+      */
+     export const getRandomUsers = async (
+       currentUserId,
+       excludeUserIds = [],
+       sampleSize = 4
+     ) => {
+       try {
+         const users = await mongoose.model("User").aggregate([
+           {
+             $match: {
+               _id: { $ne: currentUserId, $nin: excludeUserIds },
+             },
+           },
+           {
+             $sample: { size: sampleSize },
+           },
+           {
+             $project: {
+               password: 0,
+             },
+           },
+         ]);
+         return users;
+       } catch (error) {
+         console.error("Error in getRandomUsers:", error.message);
+         throw error;
+       }
+     };
+     ```
+
+     3. **`handlePasswordUpdate` 函数**
+
+        - 检查并更新用户密码。
+        - 验证当前密码是否正确，检查新密码长度，并加密新密码。
+
+     4. **`handleImageUpdate` 函数**
+
+        - 处理用户头像和封面图片的更新。
+        - 删除旧图片并上传新图片，返回新图片的 URL。
+
+     5. **`uploadImage` 和 `destroyImage` 函数**
+
+        - 上传和删除图片的辅助函数，封装了 Cloudinary 的相关逻辑。
+
+### 配置 Cloudinary
+
+```javascript
+// server.js
+import { v2 as cloudinary } from "cloudinary";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+```
+
+### 层级目录的变化
+
+为了更好地组织代码，我们对项目目录结构进行了调整，按模块和功能划分辅助函数和验证逻辑。具体变化如下：
+
+```plaintext
+backend
+├── controllers
+│   ├── auth.controller.js
+│   ├── user.controller.js
+│   └── ...
+├── db
+├── lib
+│   └── utils
+│       ├── user
+│       │   ├── userHelpers.js
+│       │   └── ...
+│       ├── validators
+│       │   ├── user.validator.js
+│       │   └── ...
+|	├── cloudinaryHelpers.js
+│       ├── generateToken.js
+│       ├── responseHelper.js
+│       └── ...
+├── middleware
+│   └── ...
+├── models
+│   └── ...
+├── routes
+│   ├── auth.routes.js
+│   ├── user.routes.js
+│   └── ...
+└── server.js
+```
+
+### 好处
+
+1. **模块化**：通过按模块和功能组织代码，我们提高了代码的模块化水平，使每个文件的职责更加单一，易于维护。
+2. **提高复用性**：将常用的辅助函数和验证逻辑封装在独立的文件中，便于在不同的控制器和路由中复用。
+3. **代码清晰**：清晰的目录结构和模块划分使代码更加易读，开发人员能够快速定位到相关逻辑。
+4. **可维护性**：独立的验证和辅助函数文件使得更新和调试更加方便，降低了代码维护的复杂度。
+
+通过这些改进，我们不仅实现了功能需求，还提升了代码质量和开发效率。
