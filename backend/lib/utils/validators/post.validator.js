@@ -2,7 +2,7 @@ import Joi from "joi";
 
 const postSchema = Joi.object({
   text: Joi.string().allow(""), // 允许文本为空
-  img: Joi.string().uri().allow(""), // 允许图片URL为空
+  img: Joi.string().uri().allow(null), // 允许图片URL为空
 }).or("text", "img"); // 至少需要一个字段
 
 /**
