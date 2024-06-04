@@ -92,7 +92,7 @@ export const updateUser = async (req, res) => {
         email: email || user.email,
         username: username || user.username,
         bio: bio || user.bio,
-        link: link || user.link,
+        link: link === "" ? null : link,
         profileImg: profileImg || user.profileImg,
         coverImg: coverImg || user.coverImg,
       },
