@@ -161,7 +161,6 @@ export const likeUnlikePost = async (req, res) => {
 export const getAllPosts = async (req, res) => {
   try {
     const posts = await getPosts();
-    console.log("posts: ", posts);
     if (posts.length === 0) {
       return res.status(200).json([]);
     }
