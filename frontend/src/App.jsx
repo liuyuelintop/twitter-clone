@@ -9,6 +9,7 @@ import RightPanel from "./components/common/RightPanel";
 import { Toaster } from "react-hot-toast";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 import { useQuery } from "@tanstack/react-query";
+import BookmarkPage from "./pages/bookmark/BookMarkPage";
 function App() {
   const { data: authUser, isLoading } = useQuery({
     // we use queryKey to give a unique name to our query and refer to it later
@@ -47,6 +48,7 @@ function App() {
         <Route path='/signup' element={!authUser ? <SignUpPage /> : <Navigate to='/' />} />
         <Route path='/notifications' element={authUser ? <NotificationPage /> : <Navigate to='/login' />} />
         <Route path='/profile/:username' element={authUser ? <ProfilePage /> : <Navigate to='/login' />} />
+        <Route path='/bookmarks/:username' element={authUser ? <BookmarkPage /> : <Navigate to='/login' />} />
       </Routes>
       {authUser && <RightPanel />}
       <Toaster />
