@@ -16,6 +16,7 @@ const Post = ({ post }) => {
     const queryClient = useQueryClient();
     const postOwner = post.user;
     const isLiked = post.likes.includes(authUser._id);
+    const isBookmarked = post.bookmarks.includes(authUser._id); // 检查是否已收藏
 
     const isMyPost = authUser._id === post.user._id;
 
@@ -106,6 +107,37 @@ const Post = ({ post }) => {
         },
     });
 
+    const { mutate: bookmarkPost, isPending: isBookmarking } = useMutation({
+        mutationFn: async () => {
+            try {
+                const res = await fetch(`/api/posts/bookmark/${post._id}`, {
+                    method: "POST",
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || "Something went wrong");
+                }
+                return data;
+            } catch (error) {
+                throw new Error(error);
+            }
+        },
+        onSuccess: (updatedBookmarks) => {
+            queryClient.setQueryData(["posts"], (oldData) => {
+                return oldData.map((p) => {
+                    if (p._id === post._id) {
+                        return { ...p, bookmarks: updatedBookmarks };
+                    }
+                    return p;
+                });
+            });
+            toast.success("Bookmarks have been updated!");
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        },
+    });
+
     const handleDeletePost = () => {
         deletePost();
     };
@@ -119,6 +151,11 @@ const Post = ({ post }) => {
     const handleLikePost = () => {
         if (isLiking) return;
         likePost();
+    };
+
+    const handleBookmarkPost = () => {
+        if (isBookmarking) return;
+        bookmarkPost();
     };
 
     return (
@@ -242,7 +279,15 @@ const Post = ({ post }) => {
                             </div>
                         </div>
                         <div className='flex w-1/3 justify-end gap-2 items-center'>
-                            <FaRegBookmark className='w-4 h-4 text-slate-500 cursor-pointer' />
+                            <div className='flex gap-1 items-center group cursor-pointer' onClick={handleBookmarkPost}>
+                                {isBookmarking && <LoadingSpinner size='sm' />}
+                                {!isBookmarked && !isBookmarking && (
+                                    <FaRegBookmark className='w-4 h-4 cursor-pointer text-slate-500 group-hover:text-blue-500' />
+                                )}
+                                {isBookmarked && !isBookmarking && (
+                                    <FaRegBookmark className='w-4 h-4 cursor-pointer text-blue-500' />
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
