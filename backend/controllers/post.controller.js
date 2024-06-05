@@ -72,25 +72,6 @@ export const deletePost = async (req, res) => {
   }
 };
 
-export const getPost = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // 查找帖子
-    const post = await Post.findById(id)
-      .populate("user", "username")
-      .populate("comments.user", "username");
-    if (!post) {
-      return res.status(404).json({ error: "Post not found" });
-    }
-
-    res.status(200).json(post);
-  } catch (error) {
-    console.error("Error in getPost controller:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
 export const commentOnPost = async (req, res) => {
   try {
     const { text } = req.body;
@@ -223,6 +204,71 @@ export const getUserPosts = async (req, res) => {
     res.status(200).json(posts);
   } catch (error) {
     console.error("Error in getUserPosts controller: ", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const bookmarkPost = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { id: postId } = req.params;
+
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const userBookmarkedPost = post.bookmarks.includes(userId);
+
+    if (userBookmarkedPost) {
+      // 取消收藏
+      await Post.updateOne({ _id: postId }, { $pull: { bookmarks: userId } });
+      await User.updateOne(
+        { _id: userId },
+        { $pull: { bookmarkedPosts: postId } }
+      );
+      const updatedBookmarks = post.bookmarks.filter(
+        (id) => id.toString() !== userId.toString()
+      );
+      res.status(200).json(updatedBookmarks);
+    } else {
+      // 收藏帖子
+      post.bookmarks.push(userId);
+      await User.updateOne(
+        { _id: userId },
+        { $push: { bookmarkedPosts: postId } }
+      );
+      await post.save();
+
+      await new Notification({
+        from: userId,
+        to: post.user,
+        type: "bookmark",
+      }).save();
+
+      const updatedBookmarks = post.bookmarks;
+      res.status(200).json(updatedBookmarks);
+    }
+  } catch (error) {
+    console.error("Error in bookmarkPost controller:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getBookmarkedPosts = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).populate("bookmarkedPosts");
+    console.log(user);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(user.bookmarkedPosts);
+  } catch (error) {
+    console.error("Error in getBookmarkedPosts controller:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
