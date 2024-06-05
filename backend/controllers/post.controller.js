@@ -259,9 +259,13 @@ export const bookmarkPost = async (req, res) => {
 export const getBookmarkedPosts = async (req, res) => {
   try {
     const userId = req.user._id;
-    const user = await User.findById(userId).populate("bookmarkedPosts");
-    console.log(user);
-
+    const user = await User.findById(userId).populate({
+      path: "bookmarkedPosts",
+      populate: {
+        path: "user",
+        select: "username profileImg fullName",
+      },
+    });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }

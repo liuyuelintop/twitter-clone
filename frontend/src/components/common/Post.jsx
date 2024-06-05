@@ -4,7 +4,7 @@ import { FaRegHeart } from "react-icons/fa";
 import { FaRegBookmark } from "react-icons/fa6";
 import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import LoadingSpinner from "./LoadingSpinner";
@@ -21,6 +21,7 @@ const Post = ({ post }) => {
     const isMyPost = authUser._id === post.user._id;
 
     const formattedDate = formatPostDate(post.createdAt);
+    const location = useLocation();
     const { mutate: deletePost, isPending: isDeleting } = useMutation({
         mutationFn: async () => {
             try {
@@ -123,14 +124,18 @@ const Post = ({ post }) => {
             }
         },
         onSuccess: (updatedBookmarks) => {
-            queryClient.setQueryData(["posts"], (oldData) => {
-                return oldData.map((p) => {
-                    if (p._id === post._id) {
-                        return { ...p, bookmarks: updatedBookmarks };
-                    }
-                    return p;
+            if (/^\/bookmarks\/[^\/]+$/.test(location.pathname)) {
+                queryClient.invalidateQueries({ queryKey: ["posts"] });
+            } else {
+                queryClient.setQueryData(["posts"], (oldData) => {
+                    return oldData.map((p) => {
+                        if (p._id === post._id) {
+                            return { ...p, bookmarks: updatedBookmarks };
+                        }
+                        return p;
+                    });
                 });
-            });
+            }
             toast.success("Bookmarks have been updated!");
         },
         onError: (error) => {
