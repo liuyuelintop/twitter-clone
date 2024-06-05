@@ -6,6 +6,20 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FaUser } from "react-icons/fa";
 import { FaHeart } from "react-icons/fa6";
+import { FaBookmark } from "react-icons/fa6";
+const getNotificationMessage = (type) => {
+    switch (type) {
+        case "follow":
+            return "followed you";
+        case "like":
+            return "liked your post";
+        case "bookmark":
+            return "bookmarked your post";
+        default:
+            return "";
+    }
+};
+
 
 const NotificationPage = () => {
     const queryClient = useQueryClient();
@@ -75,6 +89,7 @@ const NotificationPage = () => {
                         <div className='flex gap-2 p-4'>
                             {notification.type === "follow" && <FaUser className='w-7 h-7 text-primary' />}
                             {notification.type === "like" && <FaHeart className='w-7 h-7 text-red-500' />}
+                            {notification.type === "bookmark" && <FaBookmark className='w-7 h-7 text-blue-500' />}
                             <Link to={`/profile/${notification.from.username}`}>
                                 <div className='avatar'>
                                     <div className='w-8 rounded-full'>
@@ -83,7 +98,7 @@ const NotificationPage = () => {
                                 </div>
                                 <div className='flex gap-1'>
                                     <span className='font-bold'>@{notification.from.username}</span>{" "}
-                                    {notification.type === "follow" ? "followed you" : "liked your post"}
+                                    {getNotificationMessage(notification.type)}
                                 </div>
                             </Link>
                         </div>
