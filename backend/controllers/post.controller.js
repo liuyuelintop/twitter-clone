@@ -4,7 +4,7 @@ import Notification from "../models/notification.model.js";
 import { destroyImage, uploadImage } from "../lib/utils/cloudinaryHelpers.js";
 import { validatePostInput } from "../lib/utils/validators/post.validator.js";
 import { getPosts } from "../lib/utils/post/postHelpers.js";
-
+import mongoose from "mongoose";
 export const createPost = async (req, res) => {
   try {
     const { text, img } = req.body;
@@ -39,10 +39,49 @@ export const createPost = async (req, res) => {
   }
 };
 
+// export const deletePost = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const userId = req.user._id.toString();
+
+//     // 查找帖子
+//     const post = await Post.findById(id);
+//     if (!post) {
+//       return res.status(404).json({ error: "Post not found" });
+//     }
+
+//     // 检查权限
+//     if (post.user.toString() !== userId) {
+//       return res
+//         .status(401)
+//         .json({ error: "You are not authorized to delete this post" });
+//     }
+
+//     // 删除图片（如果有）
+//     if (post.img) {
+//       await destroyImage(post.img);
+//     }
+
+//     // 删除帖子
+//     await Post.findByIdAndDelete(id);
+
+//     res.status(200).json({ message: "Post deleted successfully" });
+//   } catch (error) {
+//     console.error("Error in deletePost controller:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
 export const deletePost = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log("Received post ID:", id); // 输出 ID 以便调试
     const userId = req.user._id.toString();
+
+    // 检查 id 是否为有效的 ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid post ID" });
+    }
 
     // 查找帖子
     const post = await Post.findById(id);
@@ -61,6 +100,12 @@ export const deletePost = async (req, res) => {
     if (post.img) {
       await destroyImage(post.img);
     }
+
+    // 清除所有用户的 bookmarkedPosts 列表中相关的 postId
+    await User.updateMany(
+      { bookmarkedPosts: id },
+      { $pull: { bookmarkedPosts: id } }
+    );
 
     // 删除帖子
     await Post.findByIdAndDelete(id);
@@ -273,6 +318,37 @@ export const getBookmarkedPosts = async (req, res) => {
     res.status(200).json(user.bookmarkedPosts);
   } catch (error) {
     console.error("Error in getBookmarkedPosts controller:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const deleteAllBookmarks = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).populate({
+      path: "bookmarkedPosts",
+      populate: {
+        path: "user",
+        select: "username profileImg fullName",
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Clear user's bookmarkedPosts
+    user.bookmarkedPosts = [];
+    await user.save();
+
+    // Clear bookmarks in the posts
+    await Post.updateMany(
+      { bookmarks: userId },
+      { $pull: { bookmarks: userId } }
+    );
+
+    res.status(200).json({ message: "All bookmarks deleted successfully" });
+  } catch (error) {
+    console.error("Error in deleteAllBookmarks controller:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
