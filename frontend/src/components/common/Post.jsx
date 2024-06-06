@@ -1,5 +1,3 @@
-// src/components/Post.jsx
-
 import { FaRegComment, FaRegHeart, FaRegBookmark, FaTrash } from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
 import { useState } from "react";
@@ -13,16 +11,25 @@ const Post = ({ post }) => {
     const [comment, setComment] = useState("");
     const { data: authUser } = useQuery({ queryKey: ["authUser"] });
     const location = useLocation();
-    const { deletePost, likePost, commentPost, bookmarkPost } = usePostActions(post, authUser, location);
+    const {
+        deletePost,
+        likePost,
+        commentPost,
+        bookmarkPost,
+        isDeleting,
+        isLiking,
+        isCommenting,
+        isBookmarking
+    } = usePostActions(post, authUser, location);
 
-    const handleDeletePost = () => deletePost.mutate();
+    const handleDeletePost = () => deletePost();
     const handlePostComment = (e) => {
         e.preventDefault();
-        commentPost.mutate(comment);
+        commentPost(comment);
         setComment("");
     };
-    const handleLikePost = () => likePost.mutate();
-    const handleBookmarkPost = () => bookmarkPost.mutate();
+    const handleLikePost = () => likePost();
+    const handleBookmarkPost = () => bookmarkPost();
 
     const isLiked = post.likes.includes(authUser._id);
     const isBookmarked = post.bookmarks.includes(authUser._id);
@@ -48,10 +55,10 @@ const Post = ({ post }) => {
                     </span>
                     {isMyPost && (
                         <span className='flex justify-end flex-1'>
-                            {!deletePost.isLoading && (
+                            {!isDeleting && (
                                 <FaTrash className='cursor-pointer hover:text-red-500' onClick={handleDeletePost} />
                             )}
-                            {deletePost.isLoading && <LoadingSpinner size='sm' />}
+                            {isDeleting && <LoadingSpinner size='sm' />}
                         </span>
                     )}
                 </div>
@@ -118,7 +125,7 @@ const Post = ({ post }) => {
                                         onChange={(e) => setComment(e.target.value)}
                                     />
                                     <button className='btn btn-primary rounded-full btn-sm text-white px-4'>
-                                        {commentPost.isLoading ? <LoadingSpinner size='md' /> : "Post"}
+                                        {isCommenting ? <LoadingSpinner size='md' /> : "Post"}
                                     </button>
                                 </form>
                             </div>
@@ -131,11 +138,11 @@ const Post = ({ post }) => {
                             <span className='text-sm text-slate-500 group-hover:text-green-500'>0</span>
                         </div>
                         <div className='flex gap-1 items-center group cursor-pointer' onClick={handleLikePost}>
-                            {likePost.isLoading && <LoadingSpinner size='sm' />}
-                            {!isLiked && !likePost.isLoading && (
+                            {isLiking && <LoadingSpinner size='sm' />}
+                            {!isLiked && !isLiking && (
                                 <FaRegHeart className='w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500' />
                             )}
-                            {isLiked && !likePost.isLoading && (
+                            {isLiked && !isLiking && (
                                 <FaRegHeart className='w-4 h-4 cursor-pointer text-pink-500' />
                             )}
                             <span
@@ -147,11 +154,11 @@ const Post = ({ post }) => {
                     </div>
                     <div className='flex w-1/3 justify-end gap-2 items-center'>
                         <div className='flex gap-1 items-center group cursor-pointer' onClick={handleBookmarkPost}>
-                            {bookmarkPost.isLoading && <LoadingSpinner size='sm' />}
-                            {!isBookmarked && !bookmarkPost.isLoading && (
+                            {isBookmarking && <LoadingSpinner size='sm' />}
+                            {!isBookmarked && !isBookmarking && (
                                 <FaRegBookmark className='w-4 h-4 cursor-pointer text-slate-500 group-hover:text-blue-500' />
                             )}
-                            {isBookmarked && !bookmarkPost.isLoading && (
+                            {isBookmarked && !isBookmarking && (
                                 <FaRegBookmark className='w-4 h-4 cursor-pointer text-blue-500' />
                             )}
                         </div>

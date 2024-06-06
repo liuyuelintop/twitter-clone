@@ -30,7 +30,10 @@ export const usePostActions = (post, authUser, location) => {
      * @example
      * deletePost.mutate();
      */
-    const deletePost = useMutation({
+    const {
+        mutate: deletePost,
+        isLoading: isDeleting,
+    } = useMutation({
         mutationFn: () => deletePostRequest(post._id),
         onSuccess: () => {
             toast.success("Post deleted successfully");
@@ -49,7 +52,10 @@ export const usePostActions = (post, authUser, location) => {
      * @example
      * likePost.mutate();
      */
-    const likePost = useMutation({
+    const {
+        mutate: likePost,
+        isLoading: isLiking,
+    } = useMutation({
         mutationFn: () => likePostRequest(post._id),
         onSuccess: (updatedLikes) => {
             queryClient.setQueryData(["posts"], (oldData) =>
@@ -69,7 +75,10 @@ export const usePostActions = (post, authUser, location) => {
      * @example
      * commentPost.mutate(commentText);
      */
-    const commentPost = useMutation({
+    const {
+        mutate: commentPost,
+        isLoading: isCommenting,
+    } = useMutation({
         mutationFn: (comment) => commentPostRequest(post._id, comment),
         onSuccess: () => {
             toast.success("Comment posted successfully");
@@ -88,7 +97,10 @@ export const usePostActions = (post, authUser, location) => {
      * @example
      * bookmarkPost.mutate();
      */
-    const bookmarkPost = useMutation({
+    const {
+        mutate: bookmarkPost,
+        isLoading: isBookmarking,
+    } = useMutation({
         mutationFn: () => bookmarkPostRequest(post._id),
         onSuccess: (updatedBookmarks) => {
             if (/^\/bookmarks\/[^\/]+$/.test(location.pathname)) {
@@ -105,5 +117,5 @@ export const usePostActions = (post, authUser, location) => {
         },
     });
 
-    return { deletePost, likePost, commentPost, bookmarkPost };
+    return { deletePost, likePost, commentPost, bookmarkPost, isDeleting, isLiking, isCommenting, isBookmarking };
 };
