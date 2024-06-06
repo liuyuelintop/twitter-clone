@@ -39,43 +39,9 @@ export const createPost = async (req, res) => {
   }
 };
 
-// export const deletePost = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const userId = req.user._id.toString();
-
-//     // 查找帖子
-//     const post = await Post.findById(id);
-//     if (!post) {
-//       return res.status(404).json({ error: "Post not found" });
-//     }
-
-//     // 检查权限
-//     if (post.user.toString() !== userId) {
-//       return res
-//         .status(401)
-//         .json({ error: "You are not authorized to delete this post" });
-//     }
-
-//     // 删除图片（如果有）
-//     if (post.img) {
-//       await destroyImage(post.img);
-//     }
-
-//     // 删除帖子
-//     await Post.findByIdAndDelete(id);
-
-//     res.status(200).json({ message: "Post deleted successfully" });
-//   } catch (error) {
-//     console.error("Error in deletePost controller:", error);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// };
-
 export const deletePost = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("Received post ID:", id); // 输出 ID 以便调试
     const userId = req.user._id.toString();
 
     // 检查 id 是否为有效的 ObjectId
