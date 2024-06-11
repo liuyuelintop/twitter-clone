@@ -6,8 +6,10 @@ import {
 } from "../controllers/notification.controller.js";
 
 const router = express.Router();
+// Protected routes
+router.use(protectRoute);
 
-router.get("/", protectRoute, getNotifications);
-router.delete("/", protectRoute, deleteNotifications);
+router.get("/", getNotifications);
+router.delete("/", deleteNotifications);
 
 export default router;
